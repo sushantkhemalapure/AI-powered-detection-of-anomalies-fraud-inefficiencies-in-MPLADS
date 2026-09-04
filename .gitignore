@@ -1,0 +1,15 @@
+# Python environments and generated runtime files
+venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+
+# Local data and trained model artifacts are reproducible
+backend/data/*.db
+backend/ml/artifacts/*.joblib
+backend/ml/artifacts/evaluation_report.json
+
+# Secrets and editor files
+.env
+.vscode/
+.idea/
