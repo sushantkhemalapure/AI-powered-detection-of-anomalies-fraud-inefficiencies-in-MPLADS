@@ -6,10 +6,8 @@ End-to-end pipeline:
   2. Score every work with rules + Isolation Forest (risk_engine.py)
   3. Persist risk_scores + alerts back into SQLite
   4. Save the fitted model/scaler to disk (joblib) for reuse by the API
-  5. Print an offline evaluation report against the seeded ground-truth
-     labels (is_seeded_anomaly), purely for demonstration credibility -
-     this evaluation step is the ONLY place in the whole codebase that
-     reads those label columns.
+  5. Write a training summary. The bundled allocation dataset has no verified
+     anomaly labels, so no fabricated precision/recall evaluation is produced.
 
 Run:  python -m ml.train        (from the backend/ directory)
 """
@@ -68,28 +66,18 @@ def persist_predictions(conn, df: pd.DataFrame):
         VALUES (?,?,?,?,?,?)""", rows)
 
 
-def evaluate_against_seed(df: pd.DataFrame):
-    """Purely diagnostic: how well does the *unsupervised* pipeline line up
-    with the anomalies we deliberately seeded into the synthetic data."""
-    y_true = df["is_seeded_anomaly"].astype(int)
-    y_pred_flag = (df["risk_band"].isin(["High", "Critical"])).astype(int)
-
-    tp = int(((y_true == 1) & (y_pred_flag == 1)).sum())
-    fp = int(((y_true == 0) & (y_pred_flag == 1)).sum())
-    fn = int(((y_true == 1) & (y_pred_flag == 0)).sum())
-    tn = int(((y_true == 0) & (y_pred_flag == 0)).sum())
-
-    precision = tp / (tp + fp) if (tp + fp) else 0.0
-    recall = tp / (tp + fn) if (tp + fn) else 0.0
-    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0.0
-
-    report = dict(
-        total_works=len(df), seeded_anomalies=int(y_true.sum()),
-        flagged_high_or_critical=int(y_pred_flag.sum()),
-        true_positives=tp, false_positives=fp, false_negatives=fn, true_negatives=tn,
-        precision=round(precision, 3), recall=round(recall, 3), f1=round(f1, 3),
-    )
-    return report
+def training_summary(df: pd.DataFrame):
+    """Describe the actual data scored without asserting label-based metrics."""
+    bands = df["risk_band"].value_counts().to_dict()
+    return {
+        "total_records": int(len(df)),
+        "risk_bands": {band: int(bands.get(band, 0)) for band in ("Low", "Medium", "High", "Critical")},
+        "data_note": (
+            "The imported allocation dataset contains no confirmed anomaly labels or "
+            "work/payment/progress details. Scores identify unusual allocation patterns "
+            "only and require human review."
+        ),
+    }
 
 
 def run():
@@ -120,11 +108,18 @@ def run():
             os.path.join(MODEL_DIR, "early_warning.joblib"),
         )
 
-    report = evaluate_against_seed(scored_df)
-    with open(os.path.join(MODEL_DIR, "evaluation_report.json"), "w") as f:
+    report = training_summary(scored_df)
+    with open(os.path.join(MODEL_DIR, "training_report.json"), "w") as f:
         json.dump(report, f, indent=2)
+    evaluation_path = os.path.join(MODEL_DIR, "evaluation_report.json")
+    if os.path.exists(evaluation_path):
+        os.remove(evaluation_path)
+    if delay_model is None:
+        warning_path = os.path.join(MODEL_DIR, "early_warning.joblib")
+        if os.path.exists(warning_path):
+            os.remove(warning_path)
 
-    print("\n--- Offline evaluation vs. seeded ground truth (diagnostic only) ---")
+    print("\n--- Training summary ---")
     for k, v in report.items():
         print(f"  {k}: {v}")
     print(f"\nModel artifacts saved to {MODEL_DIR}")

@@ -1,48 +1,24 @@
-# MPLADS Sentinel architecture
+# MPLADS Allocation Review architecture
 
 ```text
-Data sources / ETL
+Bundled allocation CSV
         |
         v
-SQLite operational store
-(works, sanctions, payments, progress, UCs, vendors)
-        |
-        +--> Feature engineering --> Rule engine + Isolation Forest --> risk scores / alerts
-        |                                                        |
-        |                                                        +--> delay and overrun early-warning scores
-        v
-Flask API and decision-support service
-        |
-        v
-Role-scoped web dashboard
-Ministry | State Nodal Authority | District Authority | MP
+data_loader.py --> SQLite store --> feature engineering
+                                      |
+                                      v
+                           Isolation Forest outlier scoring
+                                      |
+                                      v
+                     Flask JSON API --> allocation review web app
 ```
 
-## Repository layout
+## Data flow
 
-```text
-mplads-ai-platform/
-├── backend/
-│   ├── app.py                 # REST API and static-app host
-│   ├── db.py                  # portable MPLADS data schema
-│   ├── data_generator.py      # reproducible synthetic demo data
-│   ├── insights.py            # auditable AI briefing / Q&A fallback
-│   ├── ml/
-│   │   ├── features.py        # transaction-to-feature pipeline
-│   │   ├── risk_engine.py     # explainable anomaly rules + risk fusion
-│   │   ├── predict.py         # early-warning predictors
-│   │   └── train.py           # training, scoring and evaluation job
-│   └── data/                  # SQLite store (replace with production ETL target)
-├── frontend/
-│   ├── index.html             # role-aware app shell
-│   ├── css/style.css          # responsive design system
-│   └── js/pages/              # independently testable dashboard views
-├── docs/
-│   └── ARCHITECTURE.md
-├── README.md
-└── run.sh
-```
+`data_loader.py` imports the supplied MP allocation records without fabricating missing fields. The training command scores allocation amounts and stores a review score, band, and alert for high-priority statistical outliers. The web app reads those records through the Flask API and supports national, state, constituency, and MP scopes.
 
-## Production hand-off
+## Source boundary
 
-The synthetic generator is only a demonstration adapter. In production, an ETL connector should validate data from the MPLADS MIS and write the same logical entities: work recommendation/sanction, payments, progress reports, vendors, assets and utilization certificates. Access must be protected with SSO/RBAC, audit logs, encryption, and a human review workflow. Risk signals are decision support—not determinations of fraud.
+The current CSV provides State, MP, Constituency, and Allocated Amount. It does not provide project-level sanctions, payment or vendor data, progress reports, completion dates, utilisation certificates, coordinates, or labelled review outcomes. Execution monitoring, compliance checks, geo views, and fraud classification are therefore intentionally not presented as live features.
+
+For any future work-level expansion, integrate authorised MPLADS MIS data and add authentication, audit logging, retention controls, and a human review workflow before relying on the results operationally.

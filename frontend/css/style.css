@@ -427,9 +427,47 @@ tbody tr:last-child td { border-bottom: none; }
 .chart-box { position: relative; height: 260px; }
 .chart-box.short { height: 200px; }
 
+/* ---------------- Overview ---------------- */
+.overview-hero {
+  display: flex; align-items: center; justify-content: space-between; gap: 28px;
+  padding: 26px 30px; border-radius: var(--radius); color: #eaf1ff;
+  background: radial-gradient(circle at 88% 14%, #2656a7, transparent 31%), linear-gradient(120deg, var(--navy-950), #172b54);
+}
+.overview-hero h2 { margin: 5px 0 7px; color: #fff; font-size: 24px; }
+.overview-hero p { margin: 0; max-width: 680px; color: #b9c9e6; font-size: 13px; line-height: 1.55; }
+.overview-hero-stats { display: flex; gap: 10px; flex-shrink: 0; }
+.overview-hero-stats > div { min-width: 122px; padding: 13px; text-align: center; border: 1px solid rgba(255,255,255,.13); border-radius: 10px; background: rgba(255,255,255,.08); }
+.overview-hero-stats strong, .overview-hero-stats span { display: block; }
+.overview-hero-stats strong { color: #fff; font-size: 25px; }
+.overview-hero-stats span { color: #b9c9e6; font-size: 10.5px; margin-top: 3px; }
+.overview-data-note { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border: 1px solid #bfdbfe; border-left: 4px solid var(--accent); border-radius: var(--radius-sm); background: #eff6ff; color: #1e3a5f; }
+.overview-data-icon { display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; background: var(--accent); color: #fff; font-family: Georgia, serif; font-weight: 700; }
+.overview-data-note strong, .overview-data-note span { display: block; }
+.overview-data-note strong { font-size: 12.5px; }
+.overview-data-note span { margin-top: 2px; font-size: 11.5px; line-height: 1.4; }
+.overview-data-note .btn { margin-left: auto; white-space: nowrap; background: #fff; }
+.overview-risk-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(145px, .75fr); align-items: center; gap: 12px; }
+.risk-breakdown-list { display: grid; gap: 8px; }
+.risk-breakdown-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding-bottom: 8px; border-bottom: 1px solid #eef1f6; }
+.risk-breakdown-row:last-child { border-bottom: 0; }
+.risk-breakdown-row span { display: flex; align-items: center; gap: 7px; color: var(--ink-700); }.risk-breakdown-row i { width: 9px; height: 9px; border-radius: 50%; }
+.priority-list { display: grid; }
+.priority-row { display: flex; align-items: center; width: 100%; gap: 10px; padding: 10px 0; border: 0; border-bottom: 1px solid #eef1f6; background: transparent; cursor: pointer; text-align: left; font-family: var(--font); }
+.priority-row:hover { background: #f8fafc; }.priority-row:last-child { border-bottom: 0; }
+.priority-marker { width: 4px; height: 32px; border-radius: 99px; background: var(--risk-medium); }.priority-marker.Critical { background: var(--risk-critical); }.priority-marker.High { background: var(--risk-high); }
+.priority-main { min-width: 0; flex: 1; }.priority-main strong, .priority-main small, .priority-side small { display: block; }.priority-main strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; color: var(--ink-900); }.priority-main small, .priority-side small { font-size: 10.5px; color: var(--ink-500); margin-top: 2px; }.priority-side { text-align: right; flex-shrink: 0; }
+.check-list { display: grid; gap: 13px; }.check-list > div { display: flex; gap: 10px; align-items: flex-start; }.check-list b { display: grid; place-items: center; width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; background: #dbeafe; color: var(--accent); font-size: 11px; }.check-list strong, .check-list small { display: block; }.check-list strong { font-size: 12.5px; color: var(--ink-900); }.check-list small { margin-top: 2px; color: var(--ink-500); font-size: 11.5px; line-height: 1.35; }
+.overview-model-note { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); color: var(--ink-500); font-size: 11px; line-height: 1.4; }
+
 @media (max-width: 900px) {
   #app { grid-template-columns: 1fr; }
   .sidebar { display: none; }
+}
+
+@media (max-width: 700px) {
+  .overview-hero { align-items: flex-start; flex-direction: column; padding: 21px; }.overview-hero-stats { width: 100%; }.overview-hero-stats > div { flex: 1; }
+  .overview-data-note { align-items: flex-start; flex-wrap: wrap; }.overview-data-note .btn { margin-left: 34px; }
+  .overview-risk-layout { grid-template-columns: 1fr; }.overview-risk-layout .chart-box { height: 220px; }
 }
 
 /* ---------------- Decision intelligence ---------------- */

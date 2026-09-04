@@ -106,7 +106,10 @@ def _heuristic_delay(df: pd.DataFrame) -> np.ndarray:
     overdue = df.get("overdue_ratio", pd.Series(0, index=df.index)).fillna(0).clip(0, 2) / 2
     phys = df.get("latest_physical_pct", pd.Series(0, index=df.index)).fillna(0)
     elapsed = df.get("days_since_sanction", pd.Series(0, index=df.index)).fillna(0)
-    duration = df.get("expected_duration_days", pd.Series(1, index=df.index)).replace(0, 1)
+    # Allocation-only imports have no completion duration. Treat that missing
+    # field as unavailable (one neutral day) so the heuristic remains numeric
+    # instead of storing NaN predictions.
+    duration = df.get("expected_duration_days", pd.Series(1, index=df.index)).fillna(1).replace(0, 1)
     expected_phys = (elapsed / duration).clip(0, 1) * 100
     lag = ((expected_phys - phys) / 100).clip(0, 1)
     open_work = df["status"].isin(["InProgress", "Delayed", "Sanctioned"]).astype(float)

@@ -33,6 +33,8 @@ const API = {
   dashboardSummary: (filters) => API._get("/api/dashboard/summary", filters),
   dashboardTrend: (filters) => API._get("/api/dashboard/trend", filters),
   stateRanking: (filters) => API._get("/api/dashboard/state-ranking", filters),
+  allocationAnalytics: (filters) => API._get("/api/allocation/analytics", filters),
+  members: (filters) => API._get("/api/allocation/members", filters),
 
   works: (filters) => API._get("/api/works", filters),
   workDetail: (id) => API._get(`/api/works/${id}`),

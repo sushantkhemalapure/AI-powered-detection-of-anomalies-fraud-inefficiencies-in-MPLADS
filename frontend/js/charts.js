@@ -42,7 +42,7 @@ const Charts = (() => {
     if (!ctx) return;
     registry[canvasId] = new Chart(ctx, {
       type: "bar",
-      data: { labels, datasets: [{ data, backgroundColor: opts.color || "#2563eb", borderRadius: 5, maxBarThickness: 26 }] },
+      data: { labels, datasets: [{ data, backgroundColor: opts.colors || opts.color || "#2563eb", borderRadius: 5, maxBarThickness: 26 }] },
       options: {
         indexAxis: opts.horizontal ? "y" : "x",
         maintainAspectRatio: false,
@@ -86,5 +86,32 @@ const Charts = (() => {
     });
   }
 
-  return { donut, riskDonut, bar, line, RISK_COLORS, PALETTE, destroy };
+  function groupedBar(canvasId, labels, datasets) {
+    destroy(canvasId);
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    registry[canvasId] = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: datasets.map((d, i) => ({
+          label: d.label,
+          data: d.data,
+          backgroundColor: d.color || PALETTE[i % PALETTE.length],
+          borderRadius: 4,
+          maxBarThickness: 30,
+        })),
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 11 } } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10.5 } } },
+          y: { beginAtZero: true, grid: { color: "#eef1f6" }, ticks: { font: { size: 10.5 } } },
+        },
+      },
+    });
+  }
+
+  return { donut, riskDonut, bar, line, groupedBar, RISK_COLORS, PALETTE, destroy };
 })();

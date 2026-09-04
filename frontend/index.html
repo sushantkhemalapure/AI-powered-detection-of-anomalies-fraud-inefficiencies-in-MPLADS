@@ -3,47 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MPLADS Sentinel | AI Monitoring & Analytics</title>
+  <title>MPLADS Allocation Review | Data Explorer</title>
   <link rel="stylesheet" href="css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <div id="app">
   <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark">MP</div>
-      <div class="brand-text"><div class="t1">MPLADS Sentinel</div><div class="t2">AI Monitoring Platform · MoSPI</div></div>
-    </div>
-    <div class="nav-section-label">Monitor</div>
-    <a class="nav-link" data-route="overview"><span class="icon">◉</span> Overview</a>
-    <a class="nav-link" data-route="works"><span class="icon">☷</span> Works Explorer</a>
-    <a class="nav-link" data-route="anomalies"><span class="icon">⚠</span> AI Anomaly Explorer</a>
-    <a class="nav-link" data-route="alerts"><span class="icon">♟</span> Alerts <span class="nav-badge" id="nav-alert-count" style="display:none;"></span></a>
-    <div class="nav-section-label">Decision intelligence</div>
-    <a class="nav-link" data-route="command"><span class="icon">✦</span> AI Command Centre</a>
-    <a class="nav-link" data-route="earlywarning"><span class="icon">↗</span> Early Warning</a>
-    <a class="nav-link" data-route="compliance"><span class="icon">✓</span> Compliance Monitor</a>
-    <a class="nav-link" data-route="map"><span class="icon">⌖</span> Geo Risk Monitor</a>
-    <div class="nav-section-label">Governance</div>
-    <a class="nav-link" data-route="rankings"><span class="icon">★</span> State Rankings</a>
-    <a class="nav-link" data-route="model"><span class="icon">◌</span> Model Performance</a>
-    <div class="sidebar-footer">Smart India Hackathon · PS 26102<br>AI-assisted decision support. Alerts are not findings of fraud.</div>
+    <div class="brand"><div class="brand-mark">MP</div><div class="brand-text"><div class="t1">MPLADS Allocation Review</div><div class="t2">Source-backed allocation analysis</div></div></div>
+    <div class="nav-section-label">Explore</div>
+    <a class="nav-link" data-route="overview"><span class="icon">O</span> Overview</a>
+    <a class="nav-link" data-route="works"><span class="icon">#</span> Allocation Records</a>
+    <a class="nav-link" data-route="members"><span class="icon">M</span> MP Directory</a>
+    <a class="nav-link" data-route="rankings"><span class="icon">S</span> State Analysis</a>
+    <div class="nav-section-label">Review</div>
+    <a class="nav-link" data-route="anomalies"><span class="icon">!</span> Outlier Review</a>
+    <a class="nav-link" data-route="alerts"><span class="icon">A</span> Review Alerts <span class="nav-badge" id="nav-alert-count" style="display:none;"></span></a>
+    <div class="nav-section-label">Data</div>
+    <a class="nav-link" data-route="quality"><span class="icon">i</span> Data Coverage</a>
+    <a class="nav-link" data-route="model"><span class="icon">?</span> Methodology</a>
+    <div class="sidebar-footer">MPLADS allocation source only.<br>Outliers are review prompts, not findings of wrongdoing.</div>
   </aside>
   <div class="main">
     <div class="topbar">
-      <div><h1 id="page-title">Overview</h1><div class="subtitle" id="page-subtitle">National summary</div></div>
-      <div class="role-switcher" id="role-switcher">
-        <button class="role-pill active" data-role="ministry">Ministry</button><button class="role-pill" data-role="state">State Nodal</button><button class="role-pill" data-role="district">District</button><button class="role-pill" data-role="mp">MP</button>
-      </div>
+      <div><h1 id="page-title">Overview</h1><div class="subtitle" id="page-subtitle">National allocation summary</div></div>
+      <div class="role-switcher" id="role-switcher"><button class="role-pill active" data-role="ministry">National</button><button class="role-pill" data-role="state">State</button><button class="role-pill" data-role="district">Constituency</button><button class="role-pill" data-role="mp">MP</button></div>
       <div class="topbar-filters" id="topbar-filters"></div>
     </div>
-    <main class="content" id="content"><div class="loading-state"><div class="spinner"></div>Loading platform…</div></main>
+    <main class="content" id="content"><div class="loading-state"><div class="spinner"></div>Loading data...</div></main>
   </div>
 </div>
 <div id="modal-root"></div>
 <script src="js/api.js"></script><script src="js/charts.js"></script><script src="js/components.js"></script>
 <script src="js/pages/overview.js"></script><script src="js/pages/works.js"></script><script src="js/pages/workdetail.js"></script><script src="js/pages/anomalies.js"></script><script src="js/pages/alerts.js"></script>
-<script src="js/pages/command.js"></script><script src="js/pages/earlywarning.js"></script><script src="js/pages/compliance.js"></script><script src="js/pages/map.js"></script>
-<script src="js/pages/rankings.js"></script><script src="js/pages/model.js"></script><script src="js/app.js"></script>
+<script src="js/pages/rankings.js"></script><script src="js/pages/members.js"></script><script src="js/pages/quality.js"></script><script src="js/pages/model.js"></script><script src="js/app.js"></script>
 </body>
 </html>

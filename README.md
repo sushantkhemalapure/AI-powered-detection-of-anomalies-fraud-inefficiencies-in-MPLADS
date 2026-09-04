@@ -1,48 +1,40 @@
-# MPLADS Sentinel
+# MPLADS Allocation Review
 
-An AI-powered monitoring platform for Smart India Hackathon Problem Statement 26102: detecting anomalies, fraud indicators and execution inefficiencies in MPLADS works.
+A source-backed explorer for the bundled MPLADS MP allocation-limit dataset. It lets a reviewer browse allocation records, search MPs, compare states, examine statistically unusual allocation amounts, track review alerts, and export the current allocation register.
 
-The project turns sanctions, expenditures, vendor payments, progress reports and utilization certificates into an explainable 0–100 risk score. It is built for Ministry, State Nodal, District and MP views.
+## Included features
 
-## What the demo delivers
+- Allocation record explorer with search, sorting, filters, drill-down, and CSV export.
+- MP directory and state-level allocation comparison.
+- Allocation distribution and source-coverage report.
+- Explainable outlier-review queue using an unsupervised Isolation Forest.
+- Review-alert workflow: Open, Under Review, Resolved, or Dismissed.
 
-- Explainable flags for cost overrun, stalled work, ghost-asset signals, duplicate works, payment concentration, missing UCs and vendor concentration.
-- Isolation Forest anomaly detection for unusual combinations that fixed rules may miss.
-- Early-warning queue for likely delays and overruns before they become high-risk cases.
-- Compliance monitor for overdue works, missing UCs, pending sanctions, excess spend and stale progress reports.
-- AI Command Centre with an auditable situation report and safe offline fallback.
-- Geo Risk Monitor for prioritising field verification by location and risk score.
-- Role-scoped dashboard, case drill-down, alert workflow and CSV alert export.
+## Important data boundary
+
+The bundled CSV is imported directly from `dataset/Allocated Limit for Honble MPs (3).csv`; no random or synthetic records are generated. It contains State, MP, Constituency, and Allocated Amount. Its total footer and incomplete row are skipped, leaving 542 usable records.
+
+It does not contain individual project works, payments, dates, vendors, utilisation certificates, progress reports, verified coordinates, or confirmed anomaly labels. Therefore this version identifies unusual allocation patterns only. Scores and alerts are prompts to verify the source and approval record; they are not findings of fraud or misconduct.
 
 ## Run locally
 
 Requirements: Python 3.10+.
 
-Windows PowerShell:
+From the repository root on Windows:
+
+```powershell
+.\run.ps1
+```
+
+Or run the steps manually:
 
 ```powershell
 cd backend
-.\venv\Scripts\Activate.ps1
-python app.py
+..\venv\Scripts\python.exe data_loader.py
+..\venv\Scripts\python.exe -m ml.train
+..\venv\Scripts\python.exe app.py
 ```
 
-Then open http://localhost:5000.
+Open http://localhost:5000.
 
-For a fresh demo database:
-
-```powershell
-cd backend
-python data_generator.py --works 3200 --anomaly-rate 0.09
-python -m ml.train
-python app.py
-```
-
-Linux/macOS users can run `./run.sh` from the repository root.
-
-## Important demo note
-
-The bundled records are synthetic because public MPLADS reporting pages do not provide a transaction-level data API. Labels in the generated data are used only to evaluate the demo model; they are never read by the detector. In a deployment, replace the generator with a governed ETL integration to the authorised MPLADS MIS.
-
-Risk scores and alerts are prompts for human review, not findings of fraud or misconduct.
-
-See [architecture documentation](docs/ARCHITECTURE.md) for the data flow and repository layout.
+See [architecture documentation](docs/ARCHITECTURE.md) for the data flow.

@@ -2,12 +2,12 @@
 app.py - Flask REST API for the MPLADS AI Monitoring & Analytics Platform.
 
 Serves:
-  - JSON API under /api/*  (dashboards, works, anomalies, alerts, compliance,
-    early warning, map, AI briefing)
+  - JSON API under /api/*  (allocation records, members, state analysis,
+    outlier review, alerts, exports, and data coverage)
   - The static frontend (frontend/) at /
 
-Run:  python app.py   (after data_generator.py and `python -m ml.train` have
-                        been run once - see README.md)
+Run:  python app.py   (after `python data_loader.py` and
+                        `python -m ml.train` have been run once - see README.md)
 """
 
 import csv
@@ -292,6 +292,117 @@ def dashboard_state_ranking():
 
 
 # ---------------------------------------------------------------------------
+# Allocation analysis (available with the bundled allocation-only source)
+# ---------------------------------------------------------------------------
+
+@app.route("/api/allocation/analytics")
+def allocation_analytics():
+    """Return source-backed distribution and coverage facts for the dashboard."""
+    where, params = apply_scope([], [])
+    wsql = where_sql(where)
+    base = "FROM works w JOIN districts d ON w.district_id = d.district_id"
+    values = query(
+        f"SELECT w.sanctioned_amount_lakh as amount {base} {wsql} "
+        "ORDER BY w.sanctioned_amount_lakh",
+        tuple(params),
+    )
+    amounts = [float(row["amount"]) for row in values if row["amount"] is not None]
+    if not amounts:
+        return jsonify({"distribution": {}, "coverage": {}, "common_amounts": []})
+
+    count = len(amounts)
+    def percentile(p):
+        index = (count - 1) * p
+        lower, upper = int(index), min(int(index) + 1, count - 1)
+        return amounts[lower] + (amounts[upper] - amounts[lower]) * (index - lower)
+
+    coverage = query_one(f"""
+        SELECT COUNT(*) as records,
+               COUNT(DISTINCT d.state_id) as states,
+               COUNT(DISTINCT w.district_id) as constituencies,
+               COUNT(DISTINCT w.mp_id) as members
+        {base} {wsql}
+    """, tuple(params))
+    common_amounts = query(f"""
+        SELECT ROUND(w.sanctioned_amount_lakh, 2) as amount_lakh, COUNT(*) as count
+        {base} {wsql}
+        GROUP BY ROUND(w.sanctioned_amount_lakh, 2)
+        ORDER BY count DESC, amount_lakh DESC LIMIT 6
+    """, tuple(params))
+    return jsonify({
+        "distribution": {
+            "min_lakh": amounts[0], "p25_lakh": percentile(.25),
+            "median_lakh": percentile(.5), "p75_lakh": percentile(.75),
+            "max_lakh": amounts[-1], "mean_lakh": sum(amounts) / count,
+        },
+        "coverage": coverage,
+        "common_amounts": common_amounts,
+    })
+
+
+@app.route("/api/allocation/members")
+def allocation_members():
+    """Browse the actual MP allocation records without pretending they are works."""
+    search = (request.args.get("q") or "").strip()
+    sort = request.args.get("sort", "amount_desc")
+    page = max(int(request.args.get("page", 1)), 1)
+    page_size = min(max(int(request.args.get("page_size", 25)), 1), 200)
+    where, params = apply_scope([], [])
+    if search:
+        where.append("(mp.name LIKE ? OR mp.constituency LIKE ? OR s.name LIKE ?)")
+        params.extend([f"%{search}%"] * 3)
+    wsql = where_sql(where)
+    base = f"""FROM works w
+        JOIN members_of_parliament mp ON w.mp_id = mp.mp_id
+        JOIN districts d ON w.district_id = d.district_id
+        JOIN states s ON d.state_id = s.state_id
+        LEFT JOIN risk_scores rs ON rs.work_id = w.work_id
+        {wsql}"""
+    sort_map = {
+        "amount_desc": "w.sanctioned_amount_lakh DESC",
+        "amount_asc": "w.sanctioned_amount_lakh ASC",
+        "risk_desc": "COALESCE(rs.risk_score, 0) DESC",
+        "name_asc": "mp.name COLLATE NOCASE ASC",
+    }
+    total = query_one(f"SELECT COUNT(*) as c {base}", tuple(params))["c"]
+    rows = query(f"""
+        SELECT w.work_id, mp.name as mp_name, mp.constituency, s.name as state_name,
+               w.sanctioned_amount_lakh, w.source_file,
+               COALESCE(rs.risk_score, 0) as risk_score,
+               COALESCE(rs.risk_band, 'Unscored') as risk_band
+        {base} ORDER BY {sort_map.get(sort, sort_map['amount_desc'])}
+        LIMIT ? OFFSET ?
+    """, tuple(params) + (page_size, (page - 1) * page_size))
+    return jsonify({"total": total, "page": page, "page_size": page_size, "items": rows})
+
+
+@app.route("/api/export/allocations.csv")
+def export_allocations_csv():
+    where, params = apply_scope([], [])
+    wsql = where_sql(where)
+    rows = query(f"""
+        SELECT w.work_id as record_id, mp.name as mp_name, mp.constituency,
+               s.name as state_name, w.sanctioned_amount_lakh, rs.risk_score,
+               rs.risk_band, w.source_file
+        FROM works w
+        JOIN members_of_parliament mp ON w.mp_id = mp.mp_id
+        JOIN districts d ON w.district_id = d.district_id
+        JOIN states s ON d.state_id = s.state_id
+        LEFT JOIN risk_scores rs ON rs.work_id = w.work_id
+        {wsql} ORDER BY s.name, mp.constituency, mp.name
+    """, tuple(params))
+    buf = io.StringIO()
+    fields = ["record_id", "mp_name", "constituency", "state_name", "sanctioned_amount_lakh",
+              "risk_score", "risk_band", "source_file"]
+    writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+    return Response(buf.getvalue(), mimetype="text/csv", headers={
+        "Content-Disposition": "attachment; filename=mplads_allocation_records.csv"
+    })
+
+
+# ---------------------------------------------------------------------------
 # Works listing + detail
 # ---------------------------------------------------------------------------
 
@@ -359,7 +470,7 @@ def work_detail(work_id):
         SELECT w.work_id, w.mp_id, w.district_id, w.agency_id, w.work_category, w.asset_type,
                w.description, w.recommended_date, w.sanction_date, w.sanctioned_amount_lakh,
                w.estimated_cost_lakh, w.expected_completion_date, w.actual_completion_date,
-               w.status, w.latitude, w.longitude,
+               w.status, w.latitude, w.longitude, w.source_file,
                mp.name as mp_name, mp.house, mp.party, s.name as state_name,
                d.name as district_name, ia.name as agency_name
         FROM works w
@@ -446,7 +557,7 @@ def anomaly_rule_frequency():
 
 @app.route("/api/model/evaluation")
 def model_evaluation():
-    path = os.path.join(BASE_DIR, "ml", "artifacts", "evaluation_report.json")
+    path = os.path.join(BASE_DIR, "ml", "artifacts", "training_report.json")
     if not os.path.exists(path):
         return jsonify(None)
     with open(path) as f:

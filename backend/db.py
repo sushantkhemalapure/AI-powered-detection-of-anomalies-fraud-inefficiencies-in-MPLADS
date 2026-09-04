@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS districts (
 CREATE TABLE IF NOT EXISTS members_of_parliament (
     mp_id           INTEGER PRIMARY KEY,
     name             TEXT NOT NULL,
-    house            TEXT NOT NULL CHECK(house IN ('Lok Sabha','Rajya Sabha')),
+    house            TEXT NOT NULL,
     state_id         INTEGER NOT NULL REFERENCES states(state_id),
     constituency     TEXT,
     party            TEXT,
@@ -71,20 +71,19 @@ CREATE TABLE IF NOT EXISTS works (
     work_category          TEXT NOT NULL,
     asset_type             TEXT NOT NULL,
     description             TEXT NOT NULL,
-    recommended_date        TEXT NOT NULL,
+    recommended_date        TEXT,
     sanction_date            TEXT,
     sanctioned_amount_lakh   REAL NOT NULL,
     estimated_cost_lakh      REAL NOT NULL,
     expected_completion_date TEXT,
     actual_completion_date   TEXT,
     status                   TEXT NOT NULL CHECK(status IN
-                              ('Recommended','Sanctioned','InProgress','Completed','Delayed','Dropped')),
+                              ('Recommended','Sanctioned','InProgress','Completed','Delayed','Dropped','Allocation')),
     latitude                 REAL,
     longitude                REAL,
-    -- ground-truth label, used only for offline model evaluation / demo credibility.
-    -- The detection pipeline itself NEVER reads this column - it is unsupervised.
-    is_seeded_anomaly        INTEGER NOT NULL DEFAULT 0,
-    seeded_anomaly_type      TEXT
+    -- Source data may not include every work-level field. NULL means the
+    -- value was not provided by the imported source, not a generated value.
+    source_file              TEXT
 );
 
 CREATE TABLE IF NOT EXISTS expenditures (
@@ -174,8 +173,11 @@ def connection_scope():
 
 
 def init_db(reset: bool = False):
-    """Create the database file and tables. If reset=True, wipes any
-    existing database first (used when regenerating synthetic data)."""
+    """Create the database file and tables.
+
+    ``reset=True`` is used by the dataset importer to replace a previous
+    import with the records from the selected source file.
+    """
     if reset and os.path.exists(DB_PATH):
         os.remove(DB_PATH)
     with connection_scope() as conn:

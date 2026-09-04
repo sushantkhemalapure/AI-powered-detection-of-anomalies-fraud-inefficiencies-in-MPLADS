@@ -7,14 +7,14 @@ Pages.rankings = {
     el.innerHTML = `
       <div class="grid grid-2">
         <div class="card" style="grid-column: span 2;">
-          <div class="card-title-row"><h3>Average Risk Score by State</h3></div>
+          <div class="card-title-row"><h3>Average allocation-pattern review score by state</h3></div>
           <div class="chart-box" style="height:340px;"><canvas id="chart-state-risk"></canvas></div>
         </div>
       </div>
       <div class="card section-gap">
-        <div class="card-title-row"><h3>State-wise Summary (ranked by average risk)</h3></div>
+        <div class="card-title-row"><h3>State allocation summary (ranked by average review score)</h3></div>
         <div class="table-wrap"><table>
-          <thead><tr><th>#</th><th>State</th><th>Total Works</th><th>Sanctioned</th><th>Avg. Risk Score</th><th>High/Critical Works</th></tr></thead>
+          <thead><tr><th>#</th><th>State</th><th>Allocation records</th><th>Total allocated</th><th>Avg. review score</th><th>High/Critical reviews</th></tr></thead>
           <tbody>
             ${rows.map((r, i) => `
               <tr>

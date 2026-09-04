@@ -26,7 +26,7 @@ Pages.alerts = {
       const box = document.getElementById("al-list");
       box.innerHTML = UI.loading();
       const alerts = await API.alerts({ severity: st.severity || undefined, status: st.status, limit: 150 });
-      if (!alerts.length) { box.innerHTML = UI.empty("No alerts match this filter."); return; }
+      if (!alerts.length) { box.innerHTML = UI.empty("No review alerts match this filter."); return; }
       box.innerHTML = alerts.map(a => `
         <div class="alert-card ${a.severity}" data-alert-id="${a.alert_id}">
           <div class="stripe"></div>

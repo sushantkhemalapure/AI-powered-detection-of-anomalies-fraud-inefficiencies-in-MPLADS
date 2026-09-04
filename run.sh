@@ -14,15 +14,11 @@ source venv/bin/activate
 echo "Installing dependencies..."
 pip install -q -r requirements.txt
 
-if [ ! -f "data/mplads.db" ]; then
-  echo "Generating synthetic MPLADS dataset..."
-  python data_generator.py --works 3200 --anomaly-rate 0.09
-fi
+echo "Importing the bundled MPLADS allocation dataset..."
+python data_loader.py
 
-if [ ! -f "ml/artifacts/isolation_forest.joblib" ]; then
-  echo "Training the risk-detection pipeline..."
-  python -m ml.train
-fi
+echo "Training the unsupervised allocation-pattern model..."
+python -m ml.train
 
 echo ""
 echo "Starting server on http://localhost:5000"

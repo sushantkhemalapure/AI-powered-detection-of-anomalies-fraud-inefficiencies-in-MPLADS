@@ -1,0 +1,10 @@
+{
+  "total_records": 542,
+  "risk_bands": {
+    "Low": 399,
+    "Medium": 124,
+    "High": 16,
+    "Critical": 3
+  },
+  "data_note": "The imported allocation dataset contains no confirmed anomaly labels or work/payment/progress details. Scores identify unusual allocation patterns only and require human review."
+}

@@ -13,15 +13,11 @@ if (-not (Test-Path "venv\Scripts\python.exe")) {
 
 & .\venv\Scripts\python.exe -m pip install -q -r requirements.txt
 
-if (-not (Test-Path "data\mplads.db")) {
-    Write-Host "Generating synthetic MPLADS demonstration data..."
-    & .\venv\Scripts\python.exe data_generator.py --works 3200 --anomaly-rate 0.09
-}
+Write-Host "Importing the bundled MPLADS allocation dataset..."
+& .\venv\Scripts\python.exe data_loader.py
 
-if (-not (Test-Path "ml\artifacts\isolation_forest.joblib")) {
-    Write-Host "Training anomaly-detection model..."
-    & .\venv\Scripts\python.exe -m ml.train
-}
+Write-Host "Training the unsupervised allocation-pattern model..."
+& .\venv\Scripts\python.exe -m ml.train
 
 Write-Host "Starting MPLADS Sentinel at http://localhost:5000"
 & .\venv\Scripts\python.exe app.py

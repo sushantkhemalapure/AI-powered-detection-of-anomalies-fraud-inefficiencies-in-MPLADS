@@ -1,90 +1,13 @@
-// pages/anomalies.js
 window.Pages = window.Pages || {};
-
 Pages.anomalies = {
-  state: { category: "" },
-
   async render(el, filters) {
-    const [ruleFreq, anomalies] = await Promise.all([
-      API.anomalyRuleFrequency(),
-      API.anomalies({ limit: 60, category: Pages.anomalies.state.category || undefined }),
-    ]);
-
-    el.innerHTML = `
-      <div class="grid grid-3">
-        <div class="card" style="grid-column: span 1;">
-          <div class="card-title-row"><h3>Detection Rules Triggered (frequency)</h3></div>
-          <div class="chart-box short"><canvas id="chart-rule-freq"></canvas></div>
-        </div>
-        <div class="card" style="grid-column: span 2;">
-          <div class="card-title-row">
-            <h3>How the AI Detection Pipeline Works</h3>
-          </div>
-          <div style="font-size:12.5px; line-height:1.7; color:var(--ink-700);">
-            Every work is scored 0–100 by blending two layers:
-            <strong>(1) a rule engine</strong> encoding known MPLADS misuse patterns
-            (cost overruns, ghost assets, duplicate/fragmented works, front-loaded or
-            year-end payments, vendor concentration, stalled projects, missing
-            utilization certificates), and
-            <strong>(2) an unsupervised Isolation Forest</strong> trained on every
-            work's financial and progress features, which flags statistical outliers
-            even when no fixed rule fires. Rules make the score explainable;
-            the ML layer catches novel patterns rules don't anticipate.
-          </div>
-        </div>
-      </div>
-
-      <div class="card section-gap">
-        <div class="card-title-row">
-          <h3>Top Anomalous Works</h3>
-          <select id="a-category">
-            <option value="">All Rule Types</option>
-            ${Object.entries(RULE_LABELS).map(([code, label]) => `<option value="${code}" ${Pages.anomalies.state.category===code?"selected":""}>${label}</option>`).join("")}
-          </select>
-        </div>
-        <div id="a-list">${renderList(anomalies)}</div>
-      </div>
-    `;
-
-    Charts.bar("chart-rule-freq", ruleFreq.map(r => RULE_LABELS[r.rule] || r.rule), ruleFreq.map(r => r.count), { horizontal: true, color: "#dc2626" });
-
-    document.getElementById("a-category").addEventListener("change", async (e) => {
-      Pages.anomalies.state.category = e.target.value;
-      const listBox = document.getElementById("a-list");
-      listBox.innerHTML = UI.loading();
-      const data = await API.anomalies({ limit: 60, category: e.target.value || undefined });
-      listBox.innerHTML = renderList(data);
-      bindRowClicks();
-    });
-
-    bindRowClicks();
-
-    function bindRowClicks() {
-      document.querySelectorAll("#a-list tbody tr").forEach(tr => {
-        tr.addEventListener("click", () => WorkDetailModal.open(tr.dataset.id));
-      });
-    }
-
-    function renderList(items) {
-      if (!items.length) return UI.empty("No anomalies match this filter.");
-      return `
-        <div class="table-wrap"><table>
-          <thead><tr><th>Work</th><th>MP / Location</th><th>Amount</th><th>Risk</th><th>Triggered Rules</th></tr></thead>
-          <tbody>
-            ${items.map(a => `
-              <tr data-id="${a.work_id}">
-                <td class="cell-desc"><div class="primary">${Fmt.escape(truncate(a.description, 60))}</div><div class="secondary">ID #${a.work_id} · ${Fmt.escape(a.work_category)}</div></td>
-                <td>${Fmt.escape(a.mp_name)}<div class="secondary">${Fmt.escape(a.district_name)}, ${Fmt.escape(a.state_name)}</div></td>
-                <td class="cell-amount">${Fmt.lakh(a.sanctioned_amount_lakh)}</td>
-                <td>${UI.riskBadge(a.risk_band, a.risk_score)}</td>
-                <td style="max-width:280px;">${UI.ruleChips(a.triggered_rules)}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table></div>
-      `;
-    }
+    const records = await API.anomalies({ ...filters, limit: 80 });
+    el.innerHTML = `<div class="grid grid-2"><div class="card"><div class="card-title-row"><h3>What this review means</h3></div><p style="font-size:12.5px;line-height:1.7;color:var(--ink-700);">The source contains allocation limits only. An unsupervised model compares each amount with the imported national pattern and prioritises unusual records for source verification. It cannot identify delivery failures, payments, vendors, progress, or fraud.</p></div><div class="card"><div class="card-title-row"><h3>Review workflow</h3></div><div class="check-list"><div><b>1</b><span><strong>Verify the source row</strong><small>Check amount, MP, constituency and state against the sanctioned record.</small></span></div><div><b>2</b><span><strong>Check the supporting approval</strong><small>Confirm that the amount and allocation period are documented.</small></span></div><div><b>3</b><span><strong>Record the outcome</strong><small>Use Review Alerts to mark each prompt as under review, resolved, or dismissed.</small></span></div></div></div></div><div class="card section-gap"><div class="card-title-row"><h3>Allocation records for review</h3><span class="text-muted" style="font-size:12px;">Ordered by allocation-pattern review score</span></div>${renderOutlierTable(records)}</div>`;
+    el.querySelectorAll("tr[data-id]").forEach(row => row.addEventListener("click", () => WorkDetailModal.open(row.dataset.id)));
   },
 };
-
+function renderOutlierTable(rows) {
+  if (!rows.length) return UI.empty("No scored allocation records are available in this scope.");
+  return `<div class="table-wrap"><table><thead><tr><th>MP</th><th>State / constituency</th><th>Allocated amount</th><th>Review score</th><th>Review basis</th></tr></thead><tbody>${rows.map(r => `<tr data-id="${r.work_id}"><td><strong>${Fmt.escape(r.mp_name)}</strong></td><td>${Fmt.escape(r.state_name)}<div class="secondary">${Fmt.escape(r.district_name)}</div></td><td class="cell-amount">${Fmt.lakh(r.sanctioned_amount_lakh)}</td><td>${UI.riskBadge(r.risk_band, r.risk_score)}${UI.riskScoreBar(r.risk_score, r.risk_band)}</td><td class="text-muted">${r.triggered_rules?.length ? UI.ruleChips(r.triggered_rules) : "Statistical allocation outlier"}</td></tr>`).join("")}</tbody></table></div>`;
+}
 window.Pages = Pages;

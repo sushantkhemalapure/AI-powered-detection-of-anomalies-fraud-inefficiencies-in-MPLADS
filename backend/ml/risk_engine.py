@@ -199,7 +199,15 @@ def score_dataset(df: pd.DataFrame, isolation_weight=0.30, rule_weight=0.70):
     model, scaler, iso_scores = fit_isolation_forest(df)
     df = df.copy()
     df["isolation_score"] = iso_scores
-    blended = (isolation_weight * df["isolation_score"] + rule_weight * df["rule_points"]).clip(0, 100)
+    # The bundled source is allocation-only: it has no payment, progress, or
+    # vendor data from which the work-level rules can fire. In that case make
+    # the real allocation amount's Isolation Forest outlier score visible as
+    # a warning, rather than silently classifying every row as Low.
+    allocation_only = df["status"].eq("Allocation").all()
+    if allocation_only:
+        blended = (0.75 * df["isolation_score"] + 0.25 * df["rule_points"]).clip(0, 100)
+    else:
+        blended = (isolation_weight * df["isolation_score"] + rule_weight * df["rule_points"]).clip(0, 100)
     floors = df["triggered_rules"].apply(_floor_for_rules)
     df["risk_score"] = np.maximum(blended, floors).clip(0, 100)
     df["risk_band"] = df["risk_score"].apply(band_for)
@@ -227,14 +235,21 @@ def build_alerts(df: pd.DataFrame):
                 message=rule["msg"](row),
                 created_at=now,
             ))
-        if not row["triggered_rules"] and row["isolation_score"] > 70:
+        if not row["triggered_rules"] and row["risk_band"] in ("High", "Critical"):
+            allocation_record = row.get("status") == "Allocation"
             alerts.append(dict(
                 work_id=int(row["work_id"]),
-                severity="Medium",
+                severity=severity,
                 category="STATISTICAL_OUTLIER",
-                message="Flagged as a statistical outlier versus similar works nationwide "
-                        "(unusual combination of cost, timeline and payment pattern) even "
-                        "though no single rule threshold was crossed.",
+                message=(
+                    "Allocation amount is statistically unusual compared with the imported "
+                    "MP allocation records. Verify the source value and supporting approval; "
+                    "this is a review warning, not a finding of wrongdoing."
+                    if allocation_record else
+                    "Flagged as a statistical outlier versus similar works nationwide "
+                    "(unusual combination of cost, timeline and payment pattern) even "
+                    "though no single rule threshold was crossed."
+                ),
                 created_at=now,
             ))
     return alerts

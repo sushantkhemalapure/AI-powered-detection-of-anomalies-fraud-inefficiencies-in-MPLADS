@@ -3,10 +3,9 @@ features.py
 
 Builds a per-work feature table purely from the raw transactional tables
 (works, expenditures, progress_reports, utilization_certificates, vendors).
-This is the ONLY module that touches raw data for scoring purposes - it
-never reads the `is_seeded_anomaly` / `seeded_anomaly_type` label columns,
-so everything downstream (rules + isolation forest) is genuinely
-unsupervised, exactly as it would have to be against real MPLADS data.
+This is the ONLY module that touches raw data for scoring purposes. Everything
+downstream (rules + Isolation Forest) is unsupervised: it does not use fraud
+or anomaly labels.
 """
 
 import numpy as np
@@ -190,6 +189,10 @@ def build_feature_table(raw=None) -> pd.DataFrame:
 
 
 FEATURE_COLUMNS_FOR_MODEL = [
+    # Allocation-only source files do not include payment/progress fields.
+    # The allocated amount is therefore a valid, source-provided signal for
+    # detecting unusual allocation patterns.
+    "sanctioned_amount_lakh",
     "cost_overrun_ratio", "utilization_ratio", "progress_gap", "overdue_ratio",
     "first_installment_share", "march_payment_share", "duplicate_group_size",
     "fragmentation_group_size", "mp_top_vendor_share", "n_installments",
